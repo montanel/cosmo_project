@@ -62,7 +62,7 @@ def gdistr(grid,data_val,sigma, inv2sigma2):
     mu = data_val - grid[0]
     r = grid * 0.0
     r[int((mu - 4 * sigma) / dx + 1): int((mu + 4 * sigma) / dx + 1)] += np.exp(-(grid[int((mu - 4 * sigma) / dx + 1): int((mu + 4 * sigma) / dx + 1)] - mu)**2)
-     
+
     return r
 
 
@@ -84,7 +84,6 @@ def make_histogram(grid,data,choice='r',bin_size=None):
             hist += np.array(rect(grid,i,bin_size))/float(nb_data)
     return hist
 
-
 #Plotting the results
 grid = np.arange(xmin,xmax+1,bin_size)
 #y1 = make_histogram(grid,data_rand,'r',0.2) #(the graph with this histogram goes beyond 1 in y values)
@@ -96,5 +95,3 @@ print "# Time taken : ", time.clock() - start, "(s)"
 plt.plot(grid,y3,'b')
 plt.axis([xmin,xmax,0,1.2])
 plt.show()
-
-
