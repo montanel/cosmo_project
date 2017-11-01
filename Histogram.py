@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import time
-
+import sys
 
 
 
@@ -24,7 +24,7 @@ bin_size = (xmax-xmin)/float(nbins)
 
 
 #Setting the data
-data_rand = [random.gauss(6,1) for i in range(0,10000)]
+data_rand = [random.gauss(6,1) for i in range(0,50000)]
 nb_data = len(data_rand)
 
 
@@ -53,11 +53,17 @@ def tri(grid,data_val):
 
     return y
 
-def gdistr(grid,data_val,sigma):
-    y = []
-    y.append(np.exp(-(grid-data_val)**2/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2))
+def gdistr(grid,data_val,sigma, inv2sigma2):
+    """
+    Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
+    """
 
-    return y
+    dx = np.abs(grid[1] - grid[0])
+    mu = data_val - grid[0]
+    r = grid * 0.0
+    r[int((mu - 4 * sigma) / dx + 1): int((mu + 4 * sigma) / dx + 1)] += np.exp(-(grid[int((mu - 4 * sigma) / dx + 1): int((mu + 4 * sigma) / dx + 1)] - mu)**2)
+     
+    return r
 
 
 #Making the histogram
@@ -67,12 +73,15 @@ def make_histogram(grid,data,choice='r',bin_size=None):
         for i in data:
             hist += np.array(tri(grid,i))/float(nb_data)
     elif choice == 'g':
+        sigma = 0.1
+        inv2sigma2 =  1.0 / (2.0 * sigma**2)
+        norm = 1.0 / np.sqrt(2.0 * np.pi * sigma**2)
         for i in data:
-            hist += np.array(gdistr(grid,i,0.4))/float(nb_data)
+            hist += gdistr(grid,i,0.1, inv2sigma2)/float(nb_data)
+        hist * norm
     elif choice == 'r':
         for i in data:
             hist += np.array(rect(grid,i,bin_size))/float(nb_data)
-
     return hist
 
 
