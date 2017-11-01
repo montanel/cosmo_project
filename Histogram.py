@@ -54,15 +54,15 @@ def tri(grid,data_val):
     return y
 
 def gdistr(grid,data_val,sigma, inv2sigma2):
-    """
-    Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
-    """
+
+    #Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
+
 
     dx = np.abs(grid[1] - grid[0])
     mu = data_val - grid[0]
     r = grid * 0.0
     r[int((mu - 4 * sigma) / dx + 1): int((mu + 4 * sigma) / dx + 1)] += np.exp(-(grid[int((mu - 4 * sigma) / dx + 1): int((mu + 4 * sigma) / dx + 1)] - mu)**2)
-     
+
     return r
 
 
@@ -96,5 +96,3 @@ print "# Time taken : ", time.clock() - start, "(s)"
 plt.plot(grid,y3,'b')
 plt.axis([xmin,xmax,0,1.2])
 plt.show()
-
-
