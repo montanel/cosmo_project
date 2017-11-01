@@ -54,9 +54,8 @@ def tri(grid,data_val):
     return y
 
 def gdistr(grid,data_val,sigma, inv2sigma2):
-    """
-    Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
-    """
+
+    #Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
 
     dx = np.abs(grid[1] - grid[0])
     mu = data_val - grid[0]
