@@ -3,6 +3,9 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+import time
+
+
 
 
 #Variables for plotting
@@ -12,6 +15,8 @@ parser.add_argument("max", type=int, help="the upper x bound for plotting")
 parser.add_argument("bins", type=int, help="the number of bins")
 args = parser.parse_args()
 
+start = time.clock()
+
 xmin = args.min
 xmax = args.max
 nbins = args.bins
@@ -19,7 +24,7 @@ bin_size = (xmax-xmin)/float(nbins)
 
 
 #Setting the data
-data_rand = [random.gauss(6,1) for i in range(0,1000)]
+data_rand = [random.gauss(6,1) for i in range(0,10000)]
 nb_data = len(data_rand)
 
 
@@ -50,8 +55,7 @@ def tri(grid,data_val):
 
 def gdistr(grid,data_val,sigma):
     y = []
-    for i in grid:
-        y.append(np.exp(-(i-data_val)**2/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2))
+    y.append(np.exp(-(grid-data_val)**2/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2))
 
     return y
 
@@ -74,10 +78,14 @@ def make_histogram(grid,data,choice='r',bin_size=None):
 
 #Plotting the results
 grid = np.arange(xmin,xmax+1,bin_size)
-y1 = make_histogram(grid,data_rand,'r',0.2) #(the graph with this histogram goes beyond 1 in y values)
-y2 = make_histogram(grid,data_rand,'t')
+#y1 = make_histogram(grid,data_rand,'r',0.2) #(the graph with this histogram goes beyond 1 in y values)
+#y2 = make_histogram(grid,data_rand,'t')
 y3 = make_histogram(grid,data_rand,'g')
 
-plt.plot(grid,y1,'r',grid,y2,'g',grid,y3,'b')
+print "# Time taken : ", time.clock() - start, "(s)"
+
+plt.plot(grid,y3,'b')
 plt.axis([xmin,xmax,0,1.2])
 plt.show()
+
+
