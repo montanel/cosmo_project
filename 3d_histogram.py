@@ -23,7 +23,7 @@ bin_size = (nmax-nmin)/float(nbins)'''
 
 nmin = 0
 nmax = 5
-nbins = 10
+nbins = 100
 ndata = 10
 bin_size = (nmax-nmin)/float(nbins)
 
@@ -32,14 +32,32 @@ bin_size = (nmax-nmin)/float(nbins)
 data = np.random.multivariate_normal([2,4,3],np.identity(3)*0.1,ndata)
 
 
-#3d histogram fct for histogram
-#Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
-def gd3DKernel(grid,mu,inv2sigma2):
-    nbpoints = len(grid)
-    r = [0]*len(grid)
-    for point in range(0, nbpoints):
+#3d gaussian kernel with mean: mu, factor(in exponential): inv2sigma2, calculated on the entire grid
+def gd3DKernel(grid,mu,inv2sigma2): #63.18s
+    r = np.zeros(len(grid))
+    for point in range(0,len(grid)):
         prob = np.exp(-np.linalg.norm(grid[point]-mu)**2*inv2sigma2)
-        if prob>0.0005:
+        if prob > 0.0005:
+            r[point] += prob
+
+    return r
+
+def gd3DKernelFaster(grid,mu,sigma,inv2sigma2): #64.49s
+    r = np.zeros(len(grid))
+    for point in range(0,len(grid)):
+        norm = np.linalg.norm(grid[point]-mu)
+        if norm < 4*sigma:
+            prob = np.exp(-norm**2*inv2sigma2)
+            r[point] += prob
+
+    return r
+
+def gd3DKernelEvenFaster(grid,norms_grid,mu,norm_mu,sigma,inv2sigma2): #41.53s
+    r = np.zeros(len(grid))
+    for point in range(0,len(grid)):
+        norm = np.sqrt(norms_grid[point]**2+norm_mu**2-2*np.dot(grid[point],mu))
+        if norm < 4*sigma:
+            prob = np.exp(-norm**2*inv2sigma2)
             r[point] += prob
 
     return r
@@ -47,18 +65,19 @@ def gd3DKernel(grid,mu,inv2sigma2):
 
 #Making the histogram
 def make_histogram(grid,data):
-    hist = [0]*len(grid)
+    hist = np.zeros(len(grid))
     sigma = 1
-    inv2sigma2 =  1.0 / (2.0 * sigma**2)
-    norm = 1.0 / (np.sqrt(2.0 * np.pi * sigma**2)*float(ndata))
-    for i in data:
-        hist += gd3DKernel(grid,i,inv2sigma2)
+    inv2sigma2 = 1.0/(2.0*sigma**2)
+    norms_grid = [np.linalg.norm(i) for i in grid]
+    for d in data:
+        norm_d = np.linalg.norm(d)
+        hist += gd3DKernelEvenFaster(grid,norms_grid,d,norm_d,sigma,inv2sigma2)
 
-    hist = [norm*x for x in hist]
+    hist = hist/(np.sqrt(2.0*np.pi*sigma**2)*float(ndata))
     return hist
 
 
-#Contour function
+#Contour function to find points of array: hist, with only the probabilty: c
 def contour(c,hist,delta=0.1):
     return [np.logical_and(hist < c+delta/2.0, hist > c-delta/2.0)]
 
@@ -74,9 +93,7 @@ start = time.clock()
 hist = make_histogram(grid,data)
 print "#Time taken : ", time.clock() - start, "s"
 
-print hist
-print contour(0.01,hist)
-grid[contour(0.01,hist)]
+grid = grid[contour(0.1,hist)]
 print len(grid)
 ax.scatter(grid[:,0],grid[:,1],grid[:,2])
 plt.show()
