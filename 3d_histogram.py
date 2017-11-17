@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 #Libraries
 import random
 import matplotlib.pyplot as plt
@@ -23,7 +25,7 @@ bin_size = (nmax-nmin)/float(nbins)'''
 
 nmin = 0
 nmax = 5
-nbins = 100
+nbins = 10
 ndata = 10
 bin_size = (nmax-nmin)/float(nbins)
 
@@ -66,14 +68,14 @@ def gd3DKernelEvenFaster(grid,norms_grid,mu,norm_mu,sigma,inv2sigma2): #41.53s
 #Making the histogram
 def make_histogram(grid,data):
     hist = np.zeros(len(grid))
-    sigma = 1
+    sigma = (0.1)**0.5
     inv2sigma2 = 1.0/(2.0*sigma**2)
     norms_grid = [np.linalg.norm(i) for i in grid]
     for d in data:
         norm_d = np.linalg.norm(d)
         hist += gd3DKernelEvenFaster(grid,norms_grid,d,norm_d,sigma,inv2sigma2)
 
-    hist = hist/(np.sqrt(2.0*np.pi*sigma**2)*float(ndata))
+    hist = hist/(np.sqrt(2.0 * np.pi * sigma**2)**3 * float(ndata))
     return hist
 
 
