@@ -13,9 +13,9 @@ parser.add_argument("min", type=int, help="the lower bound for plotting (same fo
 parser.add_argument("max", type=int, help="the upper bound for plotting (same for x,y and z)")
 parser.add_argument("bins", type=int, help="the number of bins (same for x,y and z)")
 parser.add_argument("data", type=int, help="the number of data points")
-args = parser.parse_args()'''
+args = parser.parse_args()
 
-'''nmin = args.min
+nmin = args.min
 nmax = args.max
 nbins = args.bins
 ndata = args.data
