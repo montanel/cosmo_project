@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import time
+#from mpi4py import rc
+#rc.finalize = False #to ensure that mpi4py doesn't initialize right away
 from mpi4py import MPI
 
+
+#MPI variables
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
-print "hello world from process ", rank
-
+size = comm.Get_size()
 
 #Variables for plotting
 '''parser = argparse.ArgumentParser()
@@ -25,40 +28,21 @@ bin_size = (xmax-xmin)/float(nbins)'''
 
 xmin = 0
 xmax = 10
-nbins = 1000*8
+nbins = 100*8
 bin_size = (xmax-xmin)/float(nbins)
+
+grid = np.arange(xmin,xmax+1,bin_size)
 
 
 #Setting the data
-data_rand = [random.gauss(6,1) for i in range(0,50000)]
-nb_data = len(data_rand)
+if comm.rank == 0:
+    data_rand = [random.gauss(6,1) for i in range(0,50000)]
+    nb_data = len(data_rand)
+else:
+    data_rand = np.array([0])
 
 
 #Functions for the histogram
-#rect evaluates the rectangular function for every point of grid
-def rect(grid,data_val,bin_size):
-    y = []
-    step = data_val//bin_size*bin_size #step is the value at which the rectangle fct will raise
-    middle_step = step + bin_size/2. #middle_step is the middle of the rectangle
-    for i in grid:
-        if (abs(i-middle_step) < bin_size/2. or i == step):
-            y.append(1./bin_size)
-        else: y.append(0)
-
-    return y
-
-#tri returns the value of a triangle function around data_val for every point of grid
-def tri(grid,data_val):
-    y = []
-    for i in grid:
-        if (i>data_val-1 and i<=data_val): #first half of the triangle (should 1 be replaced by bin_size ?)
-            y.append(1-(data_val-i))
-        elif (i>data_val and i<=data_val+1):
-            y.append(1-(i-data_val))
-        else: y.append(0)
-
-    return y
-
 #Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
 def gdistr(grid,data_val,sigma, inv2sigma2):
     dx = np.abs(grid[1] - grid[0])
@@ -70,31 +54,31 @@ def gdistr(grid,data_val,sigma, inv2sigma2):
 
 
 #Making the histogram
-def make_histogram(grid,data,choice='g'):
+def make_histogram_parallel(grid,data):
     hist = [0]*len(grid)
-    if choice == 't':
-        for i in data:
-            hist += np.array(tri(grid,i))/float(nb_data)
-    elif choice == 'g':
-        sigma = 0.1
-        inv2sigma2 =  1.0 / (2.0 * sigma**2)
-        norm = 1.0 / np.sqrt(2.0 * np.pi * sigma**2)
-        for i in data:
-            hist += gdistr(grid,i,0.1, inv2sigma2)/float(nb_data)
-        hist * norm
-    elif choice == 'r':
-        for i in data:
-            hist += np.array(rect(grid,i,bin_size))/float(nb_data)
+    sigma = 0.1
+    inv2sigma2 =  1.0 / (2.0 * sigma**2)
+    norm = 1.0 / np.sqrt(2.0 * np.pi * sigma**2)
+    for i in data:
+        hist += gdistr(grid,i,0.1, inv2sigma2)
+
+    hist*norm/float(nb_data)
     return hist
 
 
-#Plotting the results
-grid = np.arange(xmin,xmax+1,bin_size)
-
+#Caulating histogram in parallel
 start = time.clock()
-y = make_histogram(grid,data_rand)
-print "# Time taken : ", time.clock() - start, "(s)"
 
-plt.plot(grid,y,'b')
-plt.axis([xmin,xmax,0,1.2])
+comm.Scatter(grid,local_grid,root=0)
+
+comm.Scatter(grid,grid)
+y = make_histogram_parallel(local_grid,data_rand)
+MPI.Finalize()
+
+print "#Time taken:", time.clock() - start, "s"
+
+
+#Plotting the results
+plt.plot(grid,y)
+plt.axis([xmin,xmax,0,1])
 plt.show()
