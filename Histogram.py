@@ -28,19 +28,22 @@ bin_size = (xmax-xmin)/float(nbins)'''
 
 xmin = 0
 xmax = 10
-nbins = 100*8
+nbins = 1000
 bin_size = (xmax-xmin)/float(nbins)
 
 grid = np.arange(xmin,xmax+1,bin_size)
 
 
 #Setting the data
+nb_data = 0
+
 if comm.rank == 0:
     data_rand = [random.gauss(6,1) for i in range(0,50000)]
     nb_data = len(data_rand)
-else:
-    data_rand = np.array([0])
 
+comm.bcast(nb_data,root=0)
+local_data_rand = np.array([nb_data/size])
+comm.Scatter(data_rand,local_data_rand,root=0)
 
 #Functions for the histogram
 #Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
@@ -62,23 +65,21 @@ def make_histogram_parallel(grid,data):
     for i in data:
         hist += gdistr(grid,i,0.1, inv2sigma2)
 
-    hist*norm/float(nb_data)
+    hist*=norm/float(nb_data)
     return hist
 
 
-#Caulating histogram in parallel
+#Calculating histogram in parallel
 start = time.clock()
+hist = make_histogram_parallel(grid,local_data_rand)
 
-comm.Scatter(grid,local_grid,root=0)
-
-comm.Scatter(grid,grid)
-y = make_histogram_parallel(local_grid,data_rand)
-MPI.Finalize()
+comm.Reduce(hist,hist,op=MPI.SUM)
 
 print "#Time taken:", time.clock() - start, "s"
 
 
 #Plotting the results
-plt.plot(grid,y)
-plt.axis([xmin,xmax,0,1])
-plt.show()
+if rank == 0:
+    plt.plot(grid,hist)
+    plt.axis([xmin,xmax,0,1])
+    plt.show()
