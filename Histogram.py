@@ -4,22 +4,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import time
-import sys
+from mpi4py import MPI
 
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+print "hello world from process ", rank
 
 
 #Variables for plotting
-parser = argparse.ArgumentParser()
+'''parser = argparse.ArgumentParser()
 parser.add_argument("min", type=int, help="the lower x bound for plotting")
 parser.add_argument("max", type=int, help="the upper x bound for plotting")
 parser.add_argument("bins", type=int, help="the number of bins")
 args = parser.parse_args()
 
-start = time.clock()
-
 xmin = args.min
 xmax = args.max
 nbins = args.bins
+bin_size = (xmax-xmin)/float(nbins)'''
+
+xmin = 0
+xmax = 10
+nbins = 1000*8
 bin_size = (xmax-xmin)/float(nbins)
 
 
@@ -53,10 +59,8 @@ def tri(grid,data_val):
 
     return y
 
+#Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
 def gdistr(grid,data_val,sigma, inv2sigma2):
-
-    #Computes a gaussian with mean: data_val and width: sigma on the entire grid: grid
-
     dx = np.abs(grid[1] - grid[0])
     mu = data_val - grid[0]
     r = grid * 0.0
@@ -66,7 +70,7 @@ def gdistr(grid,data_val,sigma, inv2sigma2):
 
 
 #Making the histogram
-def make_histogram(grid,data,choice='r',bin_size=None):
+def make_histogram(grid,data,choice='g'):
     hist = [0]*len(grid)
     if choice == 't':
         for i in data:
@@ -83,14 +87,14 @@ def make_histogram(grid,data,choice='r',bin_size=None):
             hist += np.array(rect(grid,i,bin_size))/float(nb_data)
     return hist
 
+
 #Plotting the results
 grid = np.arange(xmin,xmax+1,bin_size)
-#y1 = make_histogram(grid,data_rand,'r',0.2) #(the graph with this histogram goes beyond 1 in y values)
-#y2 = make_histogram(grid,data_rand,'t')
-y3 = make_histogram(grid,data_rand,'g')
 
+start = time.clock()
+y = make_histogram(grid,data_rand)
 print "# Time taken : ", time.clock() - start, "(s)"
 
-plt.plot(grid,y3,'b')
+plt.plot(grid,y,'b')
 plt.axis([xmin,xmax,0,1.2])
 plt.show()
