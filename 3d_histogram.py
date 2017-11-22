@@ -5,7 +5,13 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import argparse
 import time
+from mpi4py import MPI
 
+
+#MPI variables
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 #Initialization
 '''parser = argparse.ArgumentParser()
@@ -14,7 +20,6 @@ parser.add_argument("max", type=int, help="the upper bound for plotting (same fo
 parser.add_argument("bins", type=int, help="the number of bins (same for x,y and z)")
 parser.add_argument("data", type=int, help="the number of data points")
 args = parser.parse_args()
-
 nmin = args.min
 nmax = args.max
 nbins = args.bins
@@ -29,10 +34,13 @@ bin_size = (nmax-nmin)/float(nbins)
 
 x = np.linspace(nmin,nmax,nbins)
 grid = np.vstack(np.meshgrid(x,x,x)).reshape(3,-1).T
-
+hist = np.zeros(len(grid))
 
 #Setting the data
-data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata)
+data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else None
+#Sharing
+local_data = np.zeros(ndata/size)
+comm.Scatter(data,local_data,root=0)
 
 
 #3d gaussian kernel with mean: mu, factor(in exponential): inv2sigma2, calculated on the entire grid (benchmarks are with nbins=100,ndata=10)
@@ -101,18 +109,24 @@ def isosphere(c,delta):
     Z = r*np.cos(phi)
     ax.plot_surface(X,Y,Z)
 
+if rank == 0:
+    start = time.clock()
 
-start = time.clock()
-hist = make_histogram(grid,data)
-print "#Time taken:", time.clock() - start, "s"
+local_hist = make_histogram(grid,data)
+comm.Reduce(local_hist,hist,op=MPI.SUM)
+
+if rank == 0:
+    print "#Time taken in parallel:", time.clock() - start, "s"
+
 
 #Plotting the results
-fig = plt.figure()
-ax = Axes3D(fig)
+if rank == 0:
+    fig = plt.figure()
+    ax = Axes3D(fig)
 
-grid = grid[contour(0.1,hist,0.1)]
-ax.scatter(grid[:,0],grid[:,1],grid[:,2])
-ax.set_xlim(-1,1)
-ax.set_ylim(-1,1)
-ax.set_zlim(-1,1)
-plt.show()
+    grid = grid[contour(0.1,hist,0.1)]
+    ax.scatter(grid[:,0],grid[:,1],grid[:,2])
+    ax.set_xlim(-1,1)
+    ax.set_ylim(-1,1)
+    ax.set_zlim(-1,1)
+    plt.show()
