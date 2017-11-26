@@ -14,7 +14,7 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 #Initialization
-'''parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser()
 parser.add_argument("min", type=int, help="the lower bound for plotting (same for x,y and z)")
 parser.add_argument("max", type=int, help="the upper bound for plotting (same for x,y and z)")
 parser.add_argument("bins", type=int, help="the number of bins (same for x,y and z)")
@@ -24,22 +24,20 @@ nmin = args.min
 nmax = args.max
 nbins = args.bins
 ndata = args.data
-bin_size = (nmax-nmin)/float(nbins)'''
 
-nmin = -2
+'''nmin = -2
 nmax = 2
-nbins = 100
-ndata = 1000
-bin_size = (nmax-nmin)/float(nbins)
+nbins = 200
+ndata = 1000'''
 
 x = np.linspace(nmin,nmax,nbins)
 grid = np.vstack(np.meshgrid(x,x,x)).reshape(3,-1).T
 hist = np.zeros(len(grid))
 
 #Setting the data
-data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else None
+data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else np.zeros(ndata)
 #Sharing
-local_data = np.zeros(ndata/size)
+local_data = np.zeros((ndata/size,3))
 comm.Scatter(data,local_data,root=0)
 
 
@@ -86,7 +84,7 @@ def make_histogram(grid,data):
     sigma2 = 1
     inv2sigma2 = 1.0/(2.0*sigma2)
     norms_grid = np.array([np.linalg.norm(i) for i in grid])
-    for d in data:
+    for d in local_data:
         norm_d = np.linalg.norm(d)
         hist += gd3DKernelFastest(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
 
@@ -111,12 +109,18 @@ def isosphere(c,delta):
 
 if rank == 0:
     start = time.clock()
+    hist = make_histogram(grid,data)
+    print "#Time taken alone:", time.clock() - start, "s"
 
-local_hist = make_histogram(grid,data)
+if rank == 0:
+    start = time.clock()
+
+local_hist = make_histogram(grid,local_data)
 comm.Reduce(local_hist,hist,op=MPI.SUM)
 
 if rank == 0:
     print "#Time taken in parallel:", time.clock() - start, "s"
+
 
 
 #Plotting the results
@@ -126,7 +130,7 @@ if rank == 0:
 
     grid = grid[contour(0.1,hist,0.1)]
     ax.scatter(grid[:,0],grid[:,1],grid[:,2])
-    ax.set_xlim(-1,1)
-    ax.set_ylim(-1,1)
-    ax.set_zlim(-1,1)
+    ax.set_xlim(nmin,nmax)
+    ax.set_ylim(nmin,nmax)
+    ax.set_zlim(nmin,nmax)
     plt.show()
