@@ -74,16 +74,11 @@ comm.Reduce(local_hist,hist,op=MPI.SUM)
 if rank == 0:
     print "#Time taken in parallel:", time.clock() - start, "s"
 
-#if rank == 0:
-#    start = time.clock()
-#    hist_alone = make_histogram(grid,data_rand)
-#    print "#Time taken alone:", time.clock() - start, "s"
-
 
 #Plotting the results
 if rank == 0:
     plt.plot(grid, hist)
-    
+
     plt.plot(grid, ref_f(grid))
     plt.axis([xmin,xmax,0,1.2])
     plt.show()
