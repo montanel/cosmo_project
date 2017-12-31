@@ -9,33 +9,6 @@ from mpi4py import MPI
 
 
 #3d gaussian kernel with mean: mu, factor(in exponential): inv2sigma2, calculated on the entire grid (benchmarks are with nbins=100,ndata=10)
-def gd3DKernel(grid,mu,inv2sigma2): #63.18s
-    hist = np.zeros(len(grid))
-    for point in range(0,len(grid)):
-        prob = np.exp(-np.linalg.norm(grid[point]-mu)**2*inv2sigma2)
-        if prob > 0.0005:
-            hist[point] += prob
-
-    return hist
-
-def gd3DKernelFaster(grid,mu,sigma2,inv2sigma2): #64.49s
-    hist = np.zeros(len(grid))
-    for point in range(0,len(grid)):
-        norm = np.linalg.norm(grid[point]-mu)
-        if norm < 4*sigma2:
-            hist[point] += np.exp(-norm**2*inv2sigma2)
-
-    return hist
-
-def gd3DKernelEvenFaster(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #41.53s
-    hist = np.zeros(len(grid))
-    for point in range(0,len(grid)):
-        norm = np.sqrt(norms_grid[point]**2+norm_mu**2-2*np.dot(grid[point],mu))
-        if norm < 4*sigma2:
-            hist[point] += np.exp(-norm**2*inv2sigma2)
-
-    return hist
-
 def gd3DKernelFastest(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
     global timenorm
     global timeprob
@@ -83,6 +56,13 @@ def isosphere(c,delta):
     Y = r*np.sin(phi)*np.sin(theta)
     Z = r*np.cos(phi)
     ax.plot_surface(X,Y,Z)
+
+#Function to get the index of the nearest point of grid from pt
+def index(pt,grid):
+    dx = abs(grid[1,2]-grid[0,2])
+    nmin = min(grid[:,2])
+    nbins = np.cbrt(len(grid))
+    return int(np.around((pt[2]-nmin)/dx)+np.around((pt[0]-nmin)/dx*nbins,decimals=-2)+np.around((pt[1]-nmin)/dx*nbins**2,decimals=-4))
 
 
 #MPI variables
