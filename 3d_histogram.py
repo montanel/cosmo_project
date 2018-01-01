@@ -9,16 +9,10 @@ from mpi4py import MPI
 
 
 #3d gaussian kernel with mean: mu, factor(in exponential): inv2sigma2, calculated on the entire grid (benchmarks are with nbins=100,ndata=10)
-def gd3DKernelFastest(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
-    global timenorm
-    global timeprob
+def gd3DKernel(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
     hist = np.zeros(len(grid))
-    startnorm = time.clock()
     norm = np.sqrt(norms_grid**2+norm_mu**2-2*np.dot(grid,mu))
-    timenorm = np.append(timenorm,time.clock()-startnorm)
-    startprob = time.clock()
     hist[np.less_equal(norm,4*sigma2)] += np.exp(-norm[np.less_equal(norm,4*sigma2)]**2*inv2sigma2)
-    timeprob = np.append(timeprob,time.clock()-startprob)
     return hist
 
 
@@ -29,14 +23,11 @@ def make_histogram(grid,data):
     hist = np.zeros(len(grid))
     sigma2 = 1
     inv2sigma2 = 1.0/(2.0*sigma2)
-    #startnorms = time.clock()
     norms_grid = np.array([np.linalg.norm(i) for i in grid])
-    #print "#Time taken for calculating norms:", time.clock() - startnorms, "s", rank
     startloop = time.clock()
     for d in local_data:
         norm_d = np.linalg.norm(d)
-        hist += gd3DKernelFastest(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
-    print "#Time taken for loop:", time.clock() - startloop, "s", rank
+        hist += gd3DKernel(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
 
     hist = hist/(np.sqrt((2.0*np.pi*sigma2)**3)*float(ndata))
     return hist
@@ -56,6 +47,7 @@ def isosphere(c,delta):
     Y = r*np.sin(phi)*np.sin(theta)
     Z = r*np.cos(phi)
     ax.plot_surface(X,Y,Z)
+
 
 #Function to get the index of the nearest point of grid from pt
 def index(pt,grid):
@@ -94,29 +86,14 @@ hist = np.zeros(len(grid))
 data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else None
 
 #Sharing
-#start = time.clock()
 local_data = np.zeros((ndata/size,3))
 comm.Scatter(data,local_data,root=0)
-#print "#Time taken for sharing data:", time.clock() - start, "s", rank
-
-timenorm = np.array([])
-timeprob = np.array([])
 
 #start = time.clock()
 local_hist = make_histogram(grid,local_data)
 #print "#Time taken for making local_hist:", time.clock() - start, "s"
 
-#if rank == 0:
-#    start = time.clock()
-
 comm.Reduce(local_hist,hist,op=MPI.SUM,root=0)
-
-#if rank == 0:
-#    print "#Time taken for reducing:", time.clock() - start, "s"
-
-print "#Time taken for norm inside kernel:", np.sum(timenorm) ,"s", rank
-print "#Time taken for prob adding inside kernel:", np.sum(timeprob) ,"s", rank
-
 
 
 #Plotting the results

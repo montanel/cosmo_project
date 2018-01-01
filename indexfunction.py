@@ -14,4 +14,6 @@ nbins = 100
 
 x = np.linspace(nmin,nmax,nbins)
 grid = np.vstack(np.meshgrid(x,x,x)).reshape(3,-1).T
-print grid[index([-0.11, -0.33, 1],grid)]
+norm = np.array(np.linalg.norm(grid,axis=1))
+print grid[np.less_equal(norm,1)]
+print index(grid[np.less_equal(norm,1)],grid)
