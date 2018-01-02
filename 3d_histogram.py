@@ -18,12 +18,10 @@ def gd3DKernel(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
 
 #try if np.less_equal(abs(xaxis-mu[0]),4*sigma) or int((mu[0]-4*sigma-nmin)/dx+1):int((mu[0]+4*sigma-nmin)/dx+1) is faster
 def gd3DKernelCube(grid,mu,sigma2,inv2sigma2):
+    global xvect
     hist = np.zeros(len(grid))
-    nbins = int(np.cbrt(len(grid)))
-    nmin = min(grid[:,2])
-    nmax = max(grid[:,2])
-    xaxis = yaxis = zaxis = np.array(np.linspace(nmin,nmax,nbins))
-    xexp = yexp = zexp = np.zeros(nbins)
+    xaxis = yaxis = zaxis = xvect
+    xexp = yexp = zexp = np.zeros(len(xvect))
 
     x4sigma = xexp[np.less_equal(abs(xaxis-mu[0]),4*sigma2)]
     y4sigma = yexp[np.less_equal(abs(yaxis-mu[1]),4*sigma2)]
@@ -31,6 +29,7 @@ def gd3DKernelCube(grid,mu,sigma2,inv2sigma2):
     x4sigma = np.exp(-(xaxis[np.less_equal(abs(xaxis-mu[0]),4*sigma2)]-mu[0])**2*inv2sigma2)
     y4sigma = np.exp(-(yaxis[np.less_equal(abs(yaxis-mu[1]),4*sigma2)]-mu[1])**2*inv2sigma2)
     z4sigma = np.exp(-(zaxis[np.less_equal(abs(zaxis-mu[2]),4*sigma2)]-mu[2])**2*inv2sigma2)
+
 
     vect = np.array([y4sigma, x4sigma, z4sigma])
     outerprod = reduce(np.multiply.outer,vect).flatten()
@@ -99,8 +98,8 @@ ndata = args.data
 c = args.contour
 
 
-x = np.linspace(nmin,nmax,nbins)
-grid = np.vstack(np.meshgrid(x,x,x)).reshape(3,-1).T
+xvect = np.linspace(nmin,nmax,nbins)
+grid = np.vstack(np.meshgrid(xvect,xvect,xvect)).reshape(3,-1).T
 hist = np.zeros(len(grid))
 
 #Setting the data
