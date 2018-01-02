@@ -16,6 +16,29 @@ def gd3DKernel(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
     return hist
 
 
+#try if np.less_equal(abs(xaxis-mu[0]),4*sigma) or int((mu[0]-4*sigma-nmin)/dx+1):int((mu[0]+4*sigma-nmin)/dx+1) is faster
+def gd3DKernelCube(grid,mu,sigma2,inv2sigma2):
+    hist = np.zeros(len(grid))
+    nbins = int(np.cbrt(len(grid)))
+    nmin = min(grid[:,2])
+    nmax = max(grid[:,2])
+    xaxis = yaxis = zaxis = np.array(np.linspace(nmin,nmax,nbins))
+    xexp = yexp = zexp = np.zeros(nbins)
+
+    x4sigma = xexp[np.less_equal(abs(xaxis-mu[0]),4*sigma2)]
+    y4sigma = yexp[np.less_equal(abs(yaxis-mu[1]),4*sigma2)]
+    z4sigma = zexp[np.less_equal(abs(zaxis-mu[2]),4*sigma2)]
+    x4sigma = np.exp(-(xaxis[np.less_equal(abs(xaxis-mu[0]),4*sigma2)]-mu[0])**2*inv2sigma2)
+    y4sigma = np.exp(-(yaxis[np.less_equal(abs(yaxis-mu[1]),4*sigma2)]-mu[1])**2*inv2sigma2)
+    z4sigma = np.exp(-(zaxis[np.less_equal(abs(zaxis-mu[2]),4*sigma2)]-mu[2])**2*inv2sigma2)
+
+    vect = np.array([y4sigma, x4sigma, z4sigma])
+    outerprod = reduce(np.multiply.outer,vect).flatten()
+    hist[inBox(grid,4*sigma2,mu)] = outerprod
+
+    return hist
+
+
 #Making the histogram
 #If we say that sigma2x=sigma2y=sigma2z=sigma2 in the covariance matrix and all
 #the other elements are 0, we can simplify det(covariance)=sigma2**3
@@ -27,7 +50,8 @@ def make_histogram(grid,data):
     startloop = time.clock()
     for d in local_data:
         norm_d = np.linalg.norm(d)
-        hist += gd3DKernel(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
+        hist += gd3DKernelCube(grid,d,sigma2,inv2sigma2)
+        #hist += gd3DKernel(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
 
     hist = hist/(np.sqrt((2.0*np.pi*sigma2)**3)*float(ndata))
     return hist
@@ -49,12 +73,10 @@ def isosphere(c,delta):
     ax.plot_surface(X,Y,Z)
 
 
-#Function to get the index of the nearest point of grid from pt
-def index(pt,grid):
-    dx = abs(grid[1,2]-grid[0,2])
-    nmin = min(grid[:,2])
-    nbins = np.cbrt(len(grid))
-    return int(np.around((pt[2]-nmin)/dx)+np.around((pt[0]-nmin)/dx*nbins,decimals=-2)+np.around((pt[1]-nmin)/dx*nbins**2,decimals=-4))
+#Returns True if the point of grid is inside the box of sides 2*side centered around datapt
+def inBox(grid,side,datapt):
+    return np.logical_and(np.logical_and(np.less_equal(abs(grid[:,0]-datapt[0]),side),np.less_equal(abs(grid[:,1]-datapt[1]),side)),np.less_equal(abs(grid[:,2]-datapt[2]),side))
+
 
 
 #MPI variables
@@ -89,12 +111,11 @@ data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank =
 local_data = np.zeros((ndata/size,3))
 comm.Scatter(data,local_data,root=0)
 
-#start = time.clock()
+start = time.clock()
 local_hist = make_histogram(grid,local_data)
-#print "#Time taken for making local_hist:", time.clock() - start, "s"
+print "#Time taken for making local_hist:", time.clock() - start, "s"
 
 comm.Reduce(local_hist,hist,op=MPI.SUM,root=0)
-
 
 #Plotting the results
 if rank == 0:
