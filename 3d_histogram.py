@@ -47,11 +47,10 @@ def make_histogram(grid,data):
     sigma2 = 1
     inv2sigma2 = 1.0/(2.0*sigma2)
     norms_grid = np.array([np.linalg.norm(i) for i in grid])
-    startloop = time.clock()
     for d in local_data:
         norm_d = np.linalg.norm(d)
-        hist += gd3DKernelCube(grid,d,sigma2,inv2sigma2)
-        #hist += gd3DKernel(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
+        #hist += gd3DKernelCube(grid,d,sigma2,inv2sigma2)
+        hist += gd3DKernel(grid,norms_grid,d,norm_d,sigma2,inv2sigma2)
 
     hist = hist/(np.sqrt((2.0*np.pi*sigma2)**3)*float(ndata))
     return hist
