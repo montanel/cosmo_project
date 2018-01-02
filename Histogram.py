@@ -8,7 +8,7 @@ import sys
 
 
 
-#Variables for plotting
+#Variables for plotting#test
 parser = argparse.ArgumentParser()
 parser.add_argument("min", type=int, help="the lower x bound for plotting")
 parser.add_argument("max", type=int, help="the upper x bound for plotting")
