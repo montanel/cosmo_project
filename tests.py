@@ -25,6 +25,9 @@ def inBox(grid,side,datapt):
 nmin = -1
 nmax = 1
 nbins = 100
+ndata = 100
+nproc = 2
+time = 4
 
 x = np.linspace(nmin,nmax,nbins)
 grid = np.vstack(np.meshgrid(x,x,x)).reshape(3,-1).T
@@ -35,10 +38,6 @@ vect1 = np.array([1,2,3])
 vect2 = np.array([4,5,6])
 vect3 = np.array([7,8,9])
 
-vect = np.array([vect2, vect1, vect3])
-outervect = reduce(np.multiply, np.ix_(*vect))
-outervect2 = reduce(np.multiply.outer,vect).flatten()
-print outervect2
-#print np.vstack(outervect).reshape(3,-1).T
-
-hist[inBox(grid,4*sigma,datapt)] = np.exp(grid[inBox(grid,4*sigma,datapt)][:,0])
+txtfile = open("benchmarks.txt","a")
+txtfile.write("%i %i %f\n" % (ndata,nproc,time))
+txtfile.close()
