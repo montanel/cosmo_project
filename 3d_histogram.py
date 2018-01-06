@@ -88,13 +88,18 @@ hist = np.zeros(len(grid))
 
 
 
-#Setting the data
-data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else None
-
 #MPI variables
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
+
+
+
+
+#Setting the data
+data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else None
+
+
 
 #Sharing
 local_data = np.zeros((ndata/size,3))
