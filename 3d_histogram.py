@@ -33,7 +33,7 @@ def gd3DKernel(grid,mu,sigma,inv2sigma2): #0.15 s
 
     return hist
 
-def gd3DKernelIselect(grid,mu,sigma,inv2sigma2): #0.15 s
+def gd3DKernelIselect(grid,mu,sigma,inv2sigma2):
     global xvect
     global nmin
     dx = abs(xvect[1]-xvect[0])
