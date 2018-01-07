@@ -19,18 +19,16 @@ def gd3DKernelPrevious(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
 def gd3DKernel(grid,mu,sigma,inv2sigma2):
     global xvect
     hist = np.zeros(len(grid))
-    xaxis = yaxis = zaxis = xvect
-    xexp = yexp = zexp = np.zeros(len(xvect))
 
-    x4sigma = xexp[np.less_equal(abs(xaxis-mu[0]),4*sigma)]
-    y4sigma = yexp[np.less_equal(abs(yaxis-mu[1]),4*sigma)]
-    z4sigma = zexp[np.less_equal(abs(zaxis-mu[2]),4*sigma)]
-    x4sigma = np.exp(-(xaxis[np.less_equal(abs(xaxis-mu[0]),4*sigma)]-mu[0])**2*inv2sigma2)
-    y4sigma = np.exp(-(yaxis[np.less_equal(abs(yaxis-mu[1]),4*sigma)]-mu[1])**2*inv2sigma2)
-    z4sigma = np.exp(-(zaxis[np.less_equal(abs(zaxis-mu[2]),4*sigma)]-mu[2])**2*inv2sigma2)
+    x4sigma = xvect[np.less_equal(abs(xvect-mu[0]),4*sigma)]
+    y4sigma = xvect[np.less_equal(abs(xvect-mu[1]),4*sigma)]
+    z4sigma = xvect[np.less_equal(abs(xvect-mu[2]),4*sigma)]
+    xexp = np.exp(-(x4sigma-mu[0])**2*inv2sigma2)
+    yexp = np.exp(-(y4sigma-mu[1])**2*inv2sigma2)
+    zexp = np.exp(-(z4sigma-mu[2])**2*inv2sigma2)
 
 
-    vect = np.array([y4sigma, x4sigma, z4sigma])
+    vect = np.array([yexp, xexp, zexp])
     outerprod = reduce(np.multiply.outer,vect).flatten()
     hist[inBox(grid,4*sigma,mu)] = outerprod
 
@@ -97,9 +95,8 @@ size = comm.Get_size()
 
 
 #Setting the data
-data = np.random.multivariate_normal([0,0,0],np.identity(3)*0.1,ndata) if rank == 0 else None
-
-
+covmatrix = np.identity(3)*0.1
+data = np.random.multivariate_normal([0,0,0],covmatrix,ndata) if rank == 0 else None
 
 #Sharing
 local_data = np.zeros((ndata/size,3))
@@ -126,6 +123,9 @@ if rank == 0:
     grid = grid[contour(c,hist,0.1)]
     ax.scatter(grid[:,0],grid[:,1],grid[:,2])
     ax.set_xlim(nmin,nmax)
+    ax.set_xlabel("x axis")
     ax.set_ylim(nmin,nmax)
+    ax.set_ylabel("y axis")
     ax.set_zlim(nmin,nmax)
+    ax.set_zlabel("z axis")
     plt.show()'''

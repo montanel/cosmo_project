@@ -22,22 +22,5 @@ def indexboolversion(pt,grid):
 def inBox(grid,side,datapt):
     return np.logical_and(np.logical_and(np.less_equal(abs(grid[:,0]-datapt[0]),side),np.less_equal(abs(grid[:,1]-datapt[1]),side)),np.less_equal(abs(grid[:,2]-datapt[2]),side))
 
-nmin = -1
-nmax = 1
-nbins = 100
-ndata = 100
-nproc = 2
-time = 4
-
-x = np.linspace(nmin,nmax,nbins)
-grid = np.vstack(np.meshgrid(x,x,x)).reshape(3,-1).T
-hist = np.zeros(len(grid))
-datapt = [0,0,0]
-sigma = 0.1
-vect1 = np.array([1,2,3])
-vect2 = np.array([4,5,6])
-vect3 = np.array([7,8,9])
-
-txtfile = open("benchmarks.txt","a")
-txtfile.write("%i %i %f\n" % (ndata,nproc,time))
-txtfile.close()
+x = 5
+rank = 0
