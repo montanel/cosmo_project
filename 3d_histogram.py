@@ -16,7 +16,7 @@ def gd3DKernelPrevious(grid,norms_grid,mu,norm_mu,sigma2,inv2sigma2): #3.93 s
     hist[np.less_equal(norm,4*sigma2)] += np.exp(-norm[np.less_equal(norm,4*sigma2)]**2*inv2sigma2)
     return hist
 
-def gd3DKernel(grid,mu,sigma,inv2sigma2):
+def gd3DKernel(grid,mu,sigma,inv2sigma2): #0.15 s
     global xvect
     hist = np.zeros(len(grid))
 
@@ -27,6 +27,24 @@ def gd3DKernel(grid,mu,sigma,inv2sigma2):
     yexp = np.exp(-(y4sigma-mu[1])**2*inv2sigma2)
     zexp = np.exp(-(z4sigma-mu[2])**2*inv2sigma2)
 
+    vect = np.array([yexp, xexp, zexp])
+    outerprod = reduce(np.multiply.outer,vect).flatten()
+    hist[inBox(grid,4*sigma,mu)] = outerprod
+
+    return hist
+
+def gd3DKernelIselect(grid,mu,sigma,inv2sigma2): #0.15 s
+    global xvect
+    global nmin
+    dx = abs(xvect[1]-xvect[0])
+    hist = np.zeros(len(grid))
+
+    x4sigma = xvect[int(np.rint((mu[0]-4*sigma-nmin)/dx)):int(np.rint((mu[0]+4*sigma-nmin)/dx))]
+    y4sigma = xvect[int(np.rint((mu[1]-4*sigma-nmin)/dx)):int(np.rint((mu[1]+4*sigma-nmin)/dx))]
+    z4sigma = xvect[int(np.rint((mu[2]-4*sigma-nmin)/dx)):int(np.rint((mu[2]+4*sigma-nmin)/dx))]
+    xexp = np.exp(-(x4sigma-mu[0])**2*inv2sigma2)
+    yexp = np.exp(-(y4sigma-mu[1])**2*inv2sigma2)
+    zexp = np.exp(-(z4sigma-mu[2])**2*inv2sigma2)
 
     vect = np.array([yexp, xexp, zexp])
     outerprod = reduce(np.multiply.outer,vect).flatten()
@@ -90,9 +108,6 @@ hist = np.zeros(len(grid))
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
-
-
-
 
 #Setting the data
 covmatrix = np.identity(3)*0.1
