@@ -121,12 +121,14 @@ comm.Scatter(data,local_data,root=0)
 
 if rank == 0: start = time.clock()
 local_hist = make_histogram(grid,local_data)
-comm.Reduce(local_hist,hist,op=MPI.SUM,root=0)
 if rank ==0:
     time_taken = time.clock()-start
     txtfile = open("/home/luca/Documents/COSMO/benchmarks_3d.txt","a")
     txtfile.write("%i %i %i %f\n" % (nbins**3,ndata,size,time_taken))
     txtfile.close()
+
+comm.Reduce(local_hist,hist,op=MPI.SUM,root=0)
+
 
 
 
