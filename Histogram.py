@@ -16,12 +16,6 @@ def gdistr(grid,data_val,sigma, inv2sigma2):
 
     return r
 
-
-def ref_f(grid):
-    mu = 6.0
-    sigma = 1.0
-    return np.sqrt(2.0 * np.pi * sigma**2)**-1  * np.exp( -1.0 * (grid - mu)**2 / 2.0 / sigma**2)
-
 #Making the histogram
 def make_histogram(grid,data):
     hist = np.zeros(len(grid))
@@ -31,7 +25,7 @@ def make_histogram(grid,data):
     for i in data:
         hist += gdistr(grid, i, sigma, inv2sigma2)
 
-    hist*=norm/float(nb_data)
+    hist*=norm/float(ndata)
     return hist
 
 #MPI variables
@@ -44,41 +38,40 @@ parser = argparse.ArgumentParser()
 parser.add_argument("min", type=int, help="the lower x bound for plotting")
 parser.add_argument("max", type=int, help="the upper x bound for plotting")
 parser.add_argument("bins", type=int, help="the number of bins")
+parser.add_argument("data", type=int, help="the number of data points")
 args = parser.parse_args()
 
 xmin = args.min
 xmax = args.max
 nbins = args.bins
+ndata = args.data
 
 hist = np.zeros(nbins)
 grid = np.linspace(xmin,xmax,nbins)
 
 
 #Setting the data
-data_rand = np.array([random.gauss(6,1) for i in range(0,500000)]) if rank == 0 else None
-nb_data = len(data_rand) if rank == 0 else None
+data_rand = np.array([random.gauss(6,1) for i in range(0,ndata)]) if rank == 0 else None
 
 #Sharing
-nb_data = comm.bcast(nb_data,root=0)
-local_data_rand = np.zeros(nb_data/size)
+local_data_rand = np.zeros(ndata/size)
 comm.Scatter(data_rand,local_data_rand,root=0)
 
 
 #Calculating histogram in parallel
-if rank == 0:
-    start = time.clock()
-
+if rank == 0: start = time.clock()
 local_hist = make_histogram(grid,local_data_rand)
+if rank ==0:
+    time_taken = time.clock()-start
+    txtfile = open("/home/luca/Documents/COSMO/benchmarks_1d.txt","a")
+    txtfile.write("%i %i %i %f\n" % (nbins,ndata,size,time_taken))
+    txtfile.close()
+
 comm.Reduce(local_hist,hist,op=MPI.SUM)
 
-if rank == 0:
-    print "#Time taken in parallel:", time.clock() - start, "s"
 
-
-#Plotting the results
+'''#Plotting the results
 if rank == 0:
     plt.plot(grid, hist)
-
-    plt.plot(grid, ref_f(grid))
     plt.axis([xmin,xmax,0,1.2])
-    plt.show()
+    plt.show()'''
