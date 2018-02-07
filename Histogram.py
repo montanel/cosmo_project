@@ -17,9 +17,8 @@ def gdistr(grid,data_val,sigma, inv2sigma2):
     return r
 
 #Making the histogram
-def make_histogram(grid,data):
+def make_histogram(grid,data,sigma):
     hist = np.zeros(len(grid))
-    sigma = 0.01
     inv2sigma2 =  1.0 / (2.0 * sigma**2)
     norm = 1.0 / np.sqrt(2.0 * np.pi * sigma**2)
     for i in data:
@@ -39,19 +38,25 @@ parser.add_argument("min", type=int, help="the lower x bound for plotting")
 parser.add_argument("max", type=int, help="the upper x bound for plotting")
 parser.add_argument("bins", type=int, help="the number of bins")
 parser.add_argument("data", type=int, help="the number of data points")
+parser.add_argument("mean", type=float, help="the mean of the normal distribution")
+parser.add_argument("std", type=float, help="the standard deviation of the normal distribution")
+parser.add_argument("sigma", type=float, help="the standard deviation of the gaussian kernel")
 args = parser.parse_args()
 
 xmin = args.min
 xmax = args.max
 nbins = args.bins
 ndata = args.data
+mean = args.mean
+std = args.std
+sigma = args.sigma
 
 hist = np.zeros(nbins)
 grid = np.linspace(xmin,xmax,nbins)
 
 
 #Setting the data
-data_rand = np.array([random.gauss(6,1) for i in range(0,ndata)]) if rank == 0 else None
+data_rand = np.array([random.gauss(mean,std) for i in range(0,ndata)]) if rank == 0 else None
 
 #Sharing
 local_data_rand = np.zeros(ndata/size)
@@ -60,18 +65,19 @@ comm.Scatter(data_rand,local_data_rand,root=0)
 
 #Calculating histogram in parallel
 if rank == 0: start = time.clock()
-local_hist = make_histogram(grid,local_data_rand)
+local_hist = make_histogram(grid,local_data_rand,sigma)
 if rank ==0:
     time_taken = time.clock()-start
-    txtfile = open("/home/luca/Documents/COSMO/benchmarks_1d.txt","a")
+    print "#### Time taken for", size, "processe(s):", time_taken, "s ####"
+    '''txtfile = open("/home/luca/Documents/COSMO/benchmarks_1d.txt","a")
     txtfile.write("%i %i %i %f\n" % (nbins,ndata,size,time_taken))
-    txtfile.close()
+    txtfile.close()'''
 
 comm.Reduce(local_hist,hist,op=MPI.SUM)
 
 
-'''#Plotting the results
+#Plotting the results
 if rank == 0:
     plt.plot(grid, hist)
     plt.axis([xmin,xmax,0,1.2])
-    plt.show()'''
+    plt.show()

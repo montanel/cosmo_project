@@ -66,7 +66,7 @@ def make_histogram(grid,data):
 
 #Contour function to find points of array: hist, with only the probabilty: c
 def contour(c,hist,delta):
-    return [np.logical_and(hist < c+delta/2.0, hist > c-delta/2.0)]
+    return [np.logical_and(hist < c+delta, hist > c-delta)]
 
 #Function to verify if histogram is well normalized
 def isosphere(c,delta):
@@ -121,23 +121,23 @@ comm.Scatter(data,local_data,root=0)
 
 if rank == 0: start = time.clock()
 local_hist = make_histogram(grid,local_data)
-if rank ==0:
+if rank == 0:
     time_taken = time.clock()-start
-    txtfile = open("/home/luca/Documents/COSMO/benchmarks_3d.txt","a")
+    print "#### Time taken for", size, "processe(s):", time_taken, "s ####"
+    '''txtfile = open("/home/luca/Documents/COSMO/benchmarks_3d.txt","a")
     txtfile.write("%i %i %i %f\n" % (nbins**3,ndata,size,time_taken))
-    txtfile.close()
+    txtfile.close()'''
 
 comm.Reduce(local_hist,hist,op=MPI.SUM,root=0)
 
 
 
-
-'''#Plotting the results
+#Plotting the results
 if rank == 0:
     fig = plt.figure()
     ax = Axes3D(fig)
 
-    grid = grid[contour(c,hist,0.1)]
+    grid = grid[contour(c,hist,0.001)]
     ax.scatter(grid[:,0],grid[:,1],grid[:,2])
     ax.set_xlim(nmin,nmax)
     ax.set_xlabel("x axis")
@@ -145,4 +145,4 @@ if rank == 0:
     ax.set_ylabel("y axis")
     ax.set_zlim(nmin,nmax)
     ax.set_zlabel("z axis")
-    plt.show()'''
+    plt.show()
